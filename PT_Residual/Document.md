@@ -1,31 +1,12 @@
 # 实验记录概览
 
 共有4个Version，每个Version内部包含若干具体方法的尝试。
-* Version2：Related Work。对于CLT模型的复现及微调（论文链接：https://transformer-circuits.pub/2025/attribution-graphs/methods.html）
 * Version1 & Version3：由PT模型中扩展多组H node得到启发，修改Transformer残差连接
+* Version2：基于Related Work对Version1的改进。在CLT模型的基础上尝试微调（论文链接：https://transformer-circuits.pub/2025/attribution-graphs/methods.html）
 * Version4：由PT模型中扩展多组Z node得到启发，修改Transformer残差连接
 
 
 所有模型的训练结果在网页：http://10.15.89.226:8085/ 上实时反馈（校内局域网访问）
-
-# Version2:
-
-### 实验方法：
-__令每一层初始输入为 $\vec{x} $，经过Multi-head Attention模块后的输出为 $\vec{x'} $，MLP输入为 $\vec{y} $，经过MLP模块后的输出为 $\vec{y'} $__ 
-
-**Method1**
-* MLP处，第m层残差连接为 $\frac{\sum_{i=1}^{m-1}\vec{y'_i}+\vec{y'_m}}{m}+\vec{y_m} $。Attention处残差不变
-
-**Method2**
-* Attention处：第m层残差为 $\frac{\sum_{i=1}^{m-1}\vec{x'_i}+\vec{x'_m}}{m}+\vec{x_m} $，MLP处残差不变。
-
-**Method3**
-* 对于Method1的微调。将每一层权重 $\frac{1}{m} $改为可学习参数并输出最后一层的参数列表。具体来说：除第0层外，每层都拥有一个独立的权重列表，第m层权重列表长度为m+1，涵盖了0-m层所有层的可学习权重。对权重做Softmax归一化后得到每层权重分布。
-
-### 实验结果：
-从loss来衡量，Method3效果最好，略高于Baseline。
-
-
 
 # Version1:
 
@@ -65,6 +46,29 @@ __令每一层初始输入为 $\vec{x} $，经过Multi-head Attention模块后�
 
 效果最好的方法为Method3与Method4（都为修改MLP处的残差连接方法），其中Method3实验结果略好于Method4。但从loss来衡量，Method3，Method4的性能都略低于Baseline model
 
+![](images/version1.png)
+
+
+# Version2:
+
+### 实验方法：
+__令每一层初始输入为 $\vec{x} $，经过Multi-head Attention模块后的输出为 $\vec{x'} $，MLP输入为 $\vec{y} $，经过MLP模块后的输出为 $\vec{y'} $__ 
+
+**Method1**
+* MLP处，第m层残差连接为 $\frac{\sum_{i=1}^{m-1}\vec{y'_i}+\vec{y'_m}}{m}+\vec{y_m} $。Attention处残差不变。相比于Version1，不同之处就在于保留了原始Transformer中对于本层的残差连接（ $\vec{y_m} $也被加上了）
+
+**Method2**
+* Attention处：第m层残差为 $\frac{\sum_{i=1}^{m-1}\vec{x'_i}+\vec{x'_m}}{m}+\vec{x_m} $，MLP处残差不变。相比于Version1，不同之处就在于保留了原始Transformer中对于本层的残差连接（ $\vec{x_m} $也被加上了）
+
+**Method3**
+* 对于Method1的微调。将每一层权重 $\frac{1}{m} $改为可学习参数并输出最后一层的参数列表。具体来说：除第0层外，每层都拥有一个独立的权重列表，第m层权重列表长度为m+1，涵盖了0-m层所有层的可学习权重。对权重做Softmax归一化后得到每层权重分布。
+
+### 实验结果：
+从loss来衡量，Method1和3效果明显好于Method2，其中Method3性能略高于Baseline。
+
+![](images/baseline.png)
+![](images/version2.png)
+
 
 
 # Version3
@@ -83,22 +87,22 @@ Version3与Version1最核心的区别在于：不再直接记录先前层的Atte
 
 **Method1**
 
-Attention处残差连接与原始模型相同。修改MLP处的残差为先前层重算的MLP输出累加。先前层MLP输出的重算方法为：
+Attention处残差连接与原始模型相同。修改MLP处的残差为先前层重算的MLP输出累加。先前层每层MLP输出的重算方法为：
 * 保留第一次Attention计算的attn_weights， $W^V $.weight， $W^O $.weight，仅更换输入嵌入矩阵X
-* 输入嵌入X做input_norm
+* 输入嵌入 $X $做input_norm
 * Attention重算
-* Attention残差连接
+* Attention残差连接（遵循原始Transformer中的连接方法）
 * post_attn_layernorm
 * MLP计算
-* MLP计算结果不做残差连接直接输出，作为重算后的MLP输出
+* MLP计算结果不做残差连接直接输出，作为重算后的MLP输出。即：只取MLP Output。
 
 **Method2**
 
-MLP处残差连接与原始模型相同。修改Attention处的残差为先前层重算的Attention输出累加。先前层Attention输出的重算方法为：
+MLP处残差连接与原始模型相同。修改Attention处的残差为先前层重算的Attention输出累加。先前层每层Attention输出的重算方法为：
 * 保留第一次Attention计算的attn_weights， $W^V $.weight， $W^O $.weight，仅更换输入嵌入矩阵X
 * 输入嵌入X做input_norm
 * Attention重算
-* Attention重算结果不做残差连接直接输出，作为重算后的Attention输出
+* Attention重算结果不做残差连接直接输出，作为重算后的Attention输出。即：只取Attention Output。
 
 即：Method1_v3与Method2_v3的差别为：残差连接的修改位点不同，先前层输出重算的截止位置不同（截至MLP输出/截至Attention输出）
 
@@ -109,8 +113,11 @@ MLP处残差连接与原始模型相同。修改Attention处的残差为先前�
 * 与Method2基本相同，唯一不同之处在于Attention处残差和进行了归一化，且每一层的权重分布为1/m(Method 4.1)或可学习权重(Method4.2)
 
 ### 实验结果：
-对MLP处进行修改的实验结果仍整体优于对Attention处进行修改。有关MLP处修改的方法（Method1 3.1 3.2）中，Method3.2与Method3.1性能略好于Baseline，Method1性能????????
+对MLP处进行修改的实验结果仍整体优于对Attention处进行修改。有关MLP处修改的方法（Method1/3.1/3.2）中，从loss来衡量，性能均略好于Baseline。但从eval_time衡量，推理耗时都要显著高于baseline。
 
+![](images/baseline.png)
+![](images/v3m1.png)
+![](images/v3m3s.png)
 
 
 
@@ -119,11 +126,11 @@ MLP处残差连接与原始模型相同。修改Attention处的残差为先前�
 ### idea推导：
 参照PT中多组Z node（对应Transformer的hidden_states）的更新方法，每次H node（对应Transformer的Attention weight）更新时都需要接受所有组Z node的信息。即：当前层Attention weight（ $QK^T $矩阵）计算要参考先前所有层Transformer的hidden_states提供的信息。
 
-在Transformer中，类比为：第i层的 $QK^T $矩阵改为：当前与先前所有层 $QK^T $矩阵的和，注意力输出随之改为：Softmax( $\frac{\sum_i QK^T_i}{d_s} $) $V $。其中 $d_s $为scaling参数。
+在Transformer中，类比为：第i层的 $QK^T $矩阵改为：当前与先前所有层共i+1层 $QK^T $矩阵的和，注意力输出随之改为：Softmax( $\frac{\sum_i QK^T_i}{d_s} $) $V $。其中 $d_s $为scaling参数。
 
 ### 实验1： $d_s $的尝试
 
-令之前所有层计算得的 $QK^T $矩阵组成向量 $\vec{qk} $，维数为当前transformer层数m。令scaling矩阵为 $\vec{s} $，维数为当前transformer层数m。所以attn_weight矩阵可统一改写为：Softmax $(\vec{qk}·\vec{s}) $。对于 $\vec{s} $取值有以下7种方法的尝试：
+令之前所有层计算得的 $QK^T $矩阵组成向量 $\vec{qk} $，向量长度为当前transformer层数m。令scaling矩阵为 $\vec{s} $，向量长度为当前transformer层数m。所以attn_weight矩阵可统一改写为：Softmax $(\vec{qk}·\vec{s}) $。对于 $\vec{s} $取值有以下7种方法的尝试：
 
 **Method1**
 * 对于第m层，将 $\frac{1}{\sqrt{d_k}} $广播为向量 $\vec{s} $
@@ -148,6 +155,8 @@ MLP处残差连接与原始模型相同。修改Attention处的残差为先前�
 
 ### 实验1结果：
 性能最好的scaling参数仍是Method1对应的原Transformer参数（分母为 $\sqrt{d_k} $）
+
+![](images/baseline.png)
 ![](images/v4m1_2.png)
 ![](images/v4m3_4.png)
 ![](images/v4m5_6.png)
@@ -164,9 +173,11 @@ MLP处残差连接与原始模型相同。修改Attention处的残差为先前�
 
 **Method1A**
 * 在第i层Transformer中，为每个先前层&当前层共(i+1)层注册一个可学习的二维矩阵，规模为Qseq_len*Kseq_len。代表Qseq和Kseq的不同token都具有不同的可学习权重值，按照token相对位置学习。每个二维矩阵与 $QK^T $矩阵逐元素相乘，作为新的 $QK^T $矩阵。
+* 注：后续检查修改后模型的新增参数量，发现由于新增的是二维规模，导致参数增加量已经不可忽视（增加了151M，原模型大小50M），考虑放弃该方案。
 
 **Method1B**
 * 在第i层Transformer中，为每个先前层&当前层共(i+1)层注册一个长为Kseq_len的可学习向量，代表Kseq的不同token都具有不同的可学习权重值，按照token相对位置学习。每个向量与 $QK^T $矩阵广播相乘，作为新的 $QK^T $矩阵。
+* 注：新增一维的情况下，参数增加量为70000左右，可忽略不计。
 
 **Method1C**
 * 在第i层Transformer中，为每个先前层&当前层共(i+1)层注册一个长为Qseq_len的可学习向量，代表Qseq的不同token都具有不同的可学习权重值，按照token相对位置学习。每个向量与 $QK^T $矩阵广播相乘，作为新的 $QK^T $矩阵。
@@ -181,9 +192,12 @@ MLP处残差连接与原始模型相同。修改Attention处的残差为先前�
 
 ### 实验2结果：
 
-* 从loss/perplexity来衡量，上述五种方法均略高于baseline。其中DE两种由输入嵌入推断的方法又略高于ABC三种由相对位置推断的方法，但五种方法的提升幅度均比较有限。
+* 从loss/perplexity来衡量，上述五种方法除v4m1A外，都均略高于baseline。其中DE两种由输入嵌入推断的方法又略高于ABC三种由相对位置推断的方法，但五种方法的提升幅度均比较有限。这一结论基本符合预期：ABC三种由相对位置推导的方法带来的提升相比由词嵌入 $x_i $推断的方法要小。
 * 但从eval_time来衡量，这几种方法在推理时间上明显长于baseline。
 
+![](images/baseline.png)
+![](images/v4m1abc.png)
+![](images/v4m1de.png)
 
 
 ### 实验3：有关可学习token权重与先前层QK^T累加的作用探究
@@ -200,4 +214,22 @@ MLP处残差连接与原始模型相同。修改Attention处的残差为先前�
 * 与Method1D的不同在于：同样只为当前层推断一个长为Qseq_len的权重向量。学习方法为： $A_i=GELU(RMSNorm(X_i)W_1)W_2+bias $。此时W_1规模改为hidden_size*1，W_2规模改为1 *1，bias规模改为长度为1的向量
 
 ### 实验3结果
+从loss来衡量，v4mc和v4md性能同baseline相比几乎没有任何区别。
 
+![](images/baseline.png)
+![](images/v4mc.png)
+![](images/v4md.png)
+
+
+# 所有模型训练结果汇总
+
+![](images/all_models.png)
+
+# 实验结果与疑点总结
+### 实验结果
+* 降低loss的方面，相比baseline，Version4的v4m1D,v4m1E降低最多，v4m1B,v4m1C和次之。但4个Version的各种方法都没有明显的降低迹象。
+* 推理耗时方面，Version3和Version4相比baseline明显增高。Version3的主要耗时来源于先前层的重算；Version4的主要耗时来源于先前所有层 $ QK^T$矩阵（二维规模）的存储累加。由m4vc和m4vd两组实验可看出，Version4中可学习权重增加的耗时不可忽略，但相比 $ QK^T$占比较小。
+
+### 存在疑点
+* 在Version4的实验2中，v4m1B,v4m1C模型的相对位置推断可能是存在一些问题的，因为token权重更多还是取决于实际的词向量编码而不是文本中的相对位置关系。但相对位置的方法从loss上讲相比v4m1D,v4m1E差别不算很大，也相比baseline有了一些提高。
+* 通过Version4的实验3，可以看出无论是只对baseline进行先前层 $QK^T $的累加（v4m1模型），还是只对baseline进行token权重的学习（v4mc,v4md模型），都无法直接降低loss。但二者组合后loss相对出现了明显的降低（v4m1D,v4m1D模型）
