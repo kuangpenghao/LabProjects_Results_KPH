@@ -3,6 +3,7 @@
 使用XGBoost+SHAP方法，分析单个开关开闭情况对于eval/loss的影响值大小。
 
 ### 具体影响值分析
+
 <img src="shap_summary.png">
 
 * 一个点为一个实验
@@ -15,6 +16,7 @@
 * 后五个开关在单开关研究中发现开闭都可能造成loss的正反向不同影响。推断可能是与其他开关存在共同作用，也可能本身影响就不大。
 
 ### 单开关影响强度分析
+
 <img src="shap_importance.png">
 
 横轴代表SHAP值的绝对值的平均数，表征单个开关的影响强度。
@@ -22,9 +24,11 @@
 ### 效果较好实验中单开关开闭情况
 
 最好的5组实验中各开关打开情况占比
+
 <img src="top5.png">
 
 最好的20组实验中各开关打开情况占比
+
 <img src="top20.png">
 
 可看出上面柱状图中前三组开关全部打开，其他开关单个开闭情况没有非常明显的规律（存在明显的噪音）。
@@ -37,11 +41,13 @@
 # 二元分析
 
 ### 二元交互强度分析
+
 <img src="shap_interactions.png">
 
 描述了两两之间的交互强度。可看出1 3号开关（即untie_attn_weights & use_rms_norm）、2 6号开关（即use_std_residual & use_gated_ffn）之间存在明显的交互关系。其他两两之间交互关系不大。
 
 具体交互关系如下：**（所有分布图见interaction_analysis文件夹）**
+
 <img src="switch13.png">
 
 * 横轴为开关1的两个取值（0&1），红蓝色为开关3的两个取值（开或关）。纵轴数值为两个开关取值对loss的影响。
@@ -72,6 +78,7 @@
 
 
 （下列数据对应的xlsx表格为interaction_summary_pairs.xlsx）
+
 <img src="interaction_2.png">
 
 可看出：
@@ -89,20 +96,24 @@
 ### 三元交互强度分析
 
 下图为交互强度靠前的部分组别。完整数据见"three_way_model_interactions.xlsx"文件。
+
 <img src="interaction_strength_3.png">
 
 第一组具体分布：**（所有分布图见interaction_analysis文件夹）**
+
 <img src="interaction3_1.png">
 
 * 这一组的交互系数最大，但看起来刨去最低值和最高值之外，相差并不显著。而最低值和最高值之间仅仅差了use_std_residual一个开关，但导致了显著的极差。
 * 也许可以推断出：use_std_residual开关可能发挥重要的作用，但前提是use_gated_ffn与use_rms_norm全部打开。
 
 第二组具体分布：
+
 <img src="interaction3_2.png">
 
 * 这一组好像相差不算很大。如何分析？
 
 第三组具体分布：
+
 <img src="interaction3_3.png">
 
 * 这一组正好对应了1 2 3号开关，即单开关影响最大的三个。可以看出八个数值之间都有显著的差别。
@@ -111,6 +122,7 @@
 
 ### 开关具体取值情况（参考）
 完整结果见文件"interaction_summary_three.xlsx"
+
 <img src="interaction_3.png">
 
 
