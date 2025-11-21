@@ -14,6 +14,11 @@
    - 对比多组固定开关条件下的 loss 分布情况
    - 生成联合的比较图表：并排箱线图/小提琴图、重叠直方图+KDE、ECDF对比、统计量柱状图
    - 支持多条件同时比较分析
+
+3. auto_pairwise_analysis(df, switch_cols, base_out_dir, loss_col)
+   - 自动对所有开关两两组合进行四状态对比分析（00, 01, 10, 11）
+   - 为每个组合创建子文件夹，包含完整的对比分析结果
+   - 生成总结报告和影响力排行榜，找出最有影响力的开关组合
 """
 
 import pandas as pd
@@ -303,132 +308,6 @@ def compute_three_way_model_interactions(model, X, switch_cols, sample_size=200,
 
     return res_df
 
-
-def analyze_fixed_switches(df, switch_list, value_list, out_dir="fixed_switch_analysis", loss_col='eval/loss'):
-    """
-    给定若干开关名和对应的取值（0/1），过滤出满足这些固定取值的实验记录，
-    并对这些记录的 `loss_col` 列做分布分析和可视化：箱线图、直方图+KDE、小提琴图、ECDF，
-    同时输出统计量（count, mean, std, min, 25%, 50%, 75%, max）为 Excel 文件。
-
-    参数:
-    - df: 原始 DataFrame（包含开关列与 `loss_col`）
-    - switch_list: 开关名称列表，例如 ['use_gated_ffn', 'use_rms_norm']
-    - value_list: 与之等长的取值列表，例如 [1, 0]
-    - out_dir: 输出目录（图片与统计表保存到此处）
-    - loss_col: 要分析的损失列名（默认 'eval/loss'）
-
-    返回:
-    - stats_df: 包含统计量的 DataFrame
-    - subset_df: 过滤后的子集 DataFrame
-    """
-    import math
-
-    os.makedirs(out_dir, exist_ok=True)
-
-    # 校验输入
-    if len(switch_list) != len(value_list):
-        raise ValueError("switch_list 与 value_list 必须等长")
-
-    for sw in switch_list:
-        if sw not in df.columns:
-            raise ValueError(f"开关列不存在: {sw}")
-
-    # 依次过滤
-    mask = np.ones(len(df), dtype=bool)
-    for sw, val in zip(switch_list, value_list):
-        mask &= (df[sw] == int(val))
-
-    subset = df[mask].copy()
-    n = len(subset)
-    if n == 0:
-        print(f"⚠️ 无符合条件的记录: {list(zip(switch_list, value_list))}")
-        return pd.DataFrame(), subset
-
-    # 统计量
-    stats = subset[loss_col].describe()
-    stats = stats.rename({"25%": "q1", "50%": "median", "75%": "q3"})
-    stats_dict = {
-        'count': int(stats['count']),
-        'mean': float(stats['mean']),
-        'std': float(stats['std']) if not np.isnan(stats['std']) else np.nan,
-        'min': float(stats['min']),
-        'q1': float(stats['q1']),
-        'median': float(stats['median']),
-        'q3': float(stats['q3']),
-        'max': float(stats['max'])
-    }
-    stats_df = pd.DataFrame([stats_dict])
-    stats_df['condition'] = ",".join([f"{s}={int(v)}" for s, v in zip(switch_list, value_list)])
-    stats_df = stats_df.set_index('condition')
-    stats_df.to_excel(os.path.join(out_dir, "fixed_switch_stats.xlsx"))
-
-    # 几种可视化
-    vals = subset[loss_col].dropna()
-
-    # 1) 箱线图 + 小提琴图（并排）
-    plt.figure(figsize=(10, 5))
-    plt.subplot(1, 2, 1)
-    sns.boxplot(x=vals, color='skyblue')
-    plt.title('箱线图')
-    plt.xlabel(loss_col)
-
-    plt.subplot(1, 2, 2)
-    sns.violinplot(x=vals, color='lightgreen')
-    plt.title('小提琴图')
-    plt.xlabel(loss_col)
-    plt.suptitle(f"固定: {';'.join([f'{s}={int(v)}' for s,v in zip(switch_list,value_list)])} (n={n})")
-    plt.tight_layout(rect=[0, 0.03, 1, 0.95])
-    plt.savefig(os.path.join(out_dir, "box_violin.png"), dpi=150)
-    plt.close()
-
-    # 2) 直方图 + KDE
-    plt.figure(figsize=(8, 5))
-    sns.histplot(vals, kde=True, stat='density', color='cornflowerblue', bins=30)
-    plt.axvline(stats_dict['mean'], color='red', linestyle='--', label=f"mean={stats_dict['mean']:.4f}")
-    plt.axvline(stats_dict['median'], color='orange', linestyle='-.', label=f"median={stats_dict['median']:.4f}")
-    plt.legend()
-    plt.title('直方图 + KDE')
-    plt.xlabel(loss_col)
-    plt.ylabel('Density')
-    plt.tight_layout()
-    plt.savefig(os.path.join(out_dir, "hist_kde.png"), dpi=150)
-    plt.close()
-
-    # 3) 单独的 KDE 曲线
-    plt.figure(figsize=(8, 4))
-    try:
-        sns.kdeplot(vals, fill=True, color='purple')
-        plt.title('概率密度估计 (KDE)')
-        plt.xlabel(loss_col)
-        plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, "kde.png"), dpi=150)
-    except Exception:
-        # KDE 可能在样本太少时失败，降级为 histogram
-        plt.clf()
-        sns.histplot(vals, bins=30, color='gray')
-        plt.title('Histogram (fallback for KDE)')
-        plt.savefig(os.path.join(out_dir, "kde_fallback_hist.png"), dpi=150)
-    plt.close()
-
-    # 4) ECDF
-    plt.figure(figsize=(8, 4))
-    try:
-        sns.ecdfplot(vals, color='teal')
-        plt.title('经验累积分布函数 (ECDF)')
-        plt.xlabel(loss_col)
-        plt.tight_layout()
-        plt.savefig(os.path.join(out_dir, "ecdf.png"), dpi=150)
-    except Exception:
-        pass
-    plt.close()
-
-    # 保存子集为 csv 以便进一步分析
-    subset.to_csv(os.path.join(out_dir, "filtered_subset.csv"), index=False)
-
-    print(f"✅ 已对条件 {list(zip(switch_list, value_list))} 的 {n} 条记录完成分析，输出保存在 {out_dir}/")
-    return stats_df, subset
-
-
 def compare_fixed_switches(df, conditions_list, out_dir="compare_fixed_switches", loss_col='eval/loss'):
     """
     对比多组固定开关条件下的 loss 分布情况，生成联合的比较图表。
@@ -587,6 +466,144 @@ def compare_fixed_switches(df, conditions_list, out_dir="compare_fixed_switches"
     return combined_stats_df, combined_data
 
 
+def auto_pairwise_analysis(df, switch_cols, base_out_dir="auto_pairwise_analysis", loss_col='eval/loss'):
+    """
+    自动对所有开关两两组合进行四状态对比分析（00, 01, 10, 11）。
+    
+    参数:
+    - df: 原始 DataFrame（包含开关列与 `loss_col`）
+    - switch_cols: 所有开关列名列表
+    - base_out_dir: 基础输出目录，其下会创建各个两两组合的子文件夹
+    - loss_col: 要分析的损失列名（默认 'eval/loss'）
+    
+    返回:
+    - summary_results: 包含所有组合分析结果摘要的 DataFrame
+    """
+    import itertools
+    import os
+    
+    os.makedirs(base_out_dir, exist_ok=True)
+    
+    all_summaries = []
+    total_pairs = len(list(itertools.combinations(switch_cols, 2)))
+    
+    print(f"🚀 开始自动两两组合分析，共 {total_pairs} 个组合...")
+    
+    for idx, (switch1, switch2) in enumerate(itertools.combinations(switch_cols, 2), 1):
+        print(f"\n📊 处理组合 {idx}/{total_pairs}: {switch1} vs {switch2}")
+        
+        # 创建子文件夹
+        pair_dir = os.path.join(base_out_dir, f"{switch1}_vs_{switch2}")
+        os.makedirs(pair_dir, exist_ok=True)
+        
+        # 定义四种状态条件
+        conditions = [
+            {
+                'switch_list': [switch1, switch2],
+                'value_list': [0, 0],
+                'label': f'{switch1}=0, {switch2}=0'
+            },
+            {
+                'switch_list': [switch1, switch2],
+                'value_list': [0, 1],
+                'label': f'{switch1}=0, {switch2}=1'
+            },
+            {
+                'switch_list': [switch1, switch2],
+                'value_list': [1, 0],
+                'label': f'{switch1}=1, {switch2}=0'
+            },
+            {
+                'switch_list': [switch1, switch2],
+                'value_list': [1, 1],
+                'label': f'{switch1}=1, {switch2}=1'
+            }
+        ]
+        
+        try:
+            # 调用对比分析
+            compare_stats_df, compare_data = compare_fixed_switches(
+                df, conditions, out_dir=pair_dir, loss_col=loss_col
+            )
+            
+            if not compare_stats_df.empty:
+                # 提取关键信息用于总结
+                best_condition_idx = compare_stats_df['mean'].idxmin()
+                best_condition = compare_stats_df.iloc[best_condition_idx]
+                worst_condition_idx = compare_stats_df['mean'].idxmax()
+                worst_condition = compare_stats_df.iloc[worst_condition_idx]
+                
+                summary_info = {
+                    'switch1': switch1,
+                    'switch2': switch2,
+                    'pair_dir': pair_dir,
+                    'total_conditions': len(compare_stats_df),
+                    'best_condition': best_condition['condition'],
+                    'best_mean_loss': best_condition['mean'],
+                    'best_count': best_condition['count'],
+                    'worst_condition': worst_condition['condition'],
+                    'worst_mean_loss': worst_condition['mean'],
+                    'worst_count': worst_condition['count'],
+                    'loss_range': worst_condition['mean'] - best_condition['mean'],
+                    'overall_mean': compare_stats_df['mean'].mean(),
+                    'overall_std': compare_stats_df['mean'].std()
+                }
+                all_summaries.append(summary_info)
+                
+                # 保存该组合的详细统计到子文件夹
+                compare_stats_df.to_excel(os.path.join(pair_dir, "detailed_stats.xlsx"), index=False)
+                
+                print(f"✅ 完成 {switch1} vs {switch2}，最佳配置：{best_condition['condition']} (loss={best_condition['mean']:.4f})")
+            else:
+                print(f"⚠️ {switch1} vs {switch2} 没有产生有效结果")
+                
+        except Exception as e:
+            print(f"❌ 处理 {switch1} vs {switch2} 时出错: {str(e)}")
+            continue
+    
+    # 生成总结报告
+    if all_summaries:
+        summary_df = pd.DataFrame(all_summaries)
+        
+        # 按 loss_range 降序排列，找出影响最大的组合
+        summary_df = summary_df.sort_values('loss_range', ascending=False)
+        
+        # 保存总结报告
+        summary_df.to_excel(os.path.join(base_out_dir, "pairwise_analysis_summary.xlsx"), index=False)
+        
+        # 生成 Top 排行榜
+        print(f"\n📈 自动两两组合分析完成！总共处理了 {len(all_summaries)} 个有效组合")
+        print("\n🏆 影响最大的前5个开关组合（按loss差异排序）：")
+        top5 = summary_df.head(5)
+        for _, row in top5.iterrows():
+            print(f"  {row['switch1']} vs {row['switch2']}: loss范围 {row['loss_range']:.4f} "
+                  f"(最佳: {row['best_condition']}, loss={row['best_mean_loss']:.4f})")
+        
+        # 生成影响排行图表
+        plt.figure(figsize=(12, 8))
+        top10 = summary_df.head(10)
+        y_pos = np.arange(len(top10))
+        plt.barh(y_pos, top10['loss_range'], color='skyblue')
+        plt.yticks(y_pos, [f"{row['switch1']} vs {row['switch2']}" for _, row in top10.iterrows()])
+        plt.xlabel('Loss Range (最大差异)')
+        plt.title('开关组合影响力排行榜 (Top 10)')
+        plt.gca().invert_yaxis()
+        plt.tight_layout()
+        plt.savefig(os.path.join(base_out_dir, "top_influential_pairs.png"), dpi=150, bbox_inches='tight')
+        plt.close()
+        
+        print(f"\n💾 所有结果已保存到 {base_out_dir}/")
+        print("📁 文件结构：")
+        print(f"  - pairwise_analysis_summary.xlsx: 总结报告")
+        print(f"  - top_influential_pairs.png: 影响力排行图")
+        print(f"  - 各子文件夹: 每个开关组合的详细对比分析")
+        
+        return summary_df
+    else:
+        print("⚠️ 没有生成任何有效的分析结果")
+        return pd.DataFrame()
+
+
 def main():
     df, switch_cols, df_switch, y_loss, y_acc = load_data()
 
@@ -600,10 +617,6 @@ def main():
     #three_model_df = compute_three_way_model_interactions(model, X, switch_cols, sample_size=200, out_file="three_way_model_interactions.xlsx")
     #summary2_df = pairwise_scan(df, X, shap_values, shap_interaction, switch_cols)
     #summary3_df = three_way_scan(df, X, shap_interaction, switch_cols)
-    
-    # 单独分析示例
-    #stats_df, subset_df = analyze_fixed_switches(df, ['untie_attn_weights', 'use_rms_norm'], [1, 0], out_dir="fixed_10")
-    #stats_df, subset_df = analyze_fixed_switches(df, ['untie_attn_weights', 'use_rms_norm'], [1, 1], out_dir="fixed_11")
     
     # 联合对比分析示例
     '''
@@ -620,38 +633,10 @@ def main():
         }
     ]
     compare_stats_df, compare_data = compare_fixed_switches(df, conditions, out_dir="comparison_analysis_13")
-
-    conditions = [
-        {
-            'switch_list': ['untie_attn_weights', 'use_rms_norm', 'use_std_residual'],
-            'value_list': [1, 0, 1],
-            'label': 'untie_attn=1, rms_norm=0, std_residual=1'
-        },
-        {
-            'switch_list': ['untie_attn_weights', 'use_rms_norm'],
-            'value_list': [1, 1, 1],
-            'label': 'untie_attn=1, rms_norm=1, std_residual=1'
-        }
-    ]
-    compare_stats_df, compare_data = compare_fixed_switches(df, conditions, out_dir="comparison_analysis_123")
     '''
 
-    conditions = [
-        {
-            'switch_list': ['untie_layerwise_weights'],
-            'value_list': [1],
-            'label': 'untie_layerwise_weights=1'
-        },
-        {
-            'switch_list': ['untie_layerwise_weights'],
-            'value_list': [0],
-            'label': 'untie_layerwise_weights=0'
-        }
-    ]
-    compare_stats_df, compare_data = compare_fixed_switches(df, conditions, out_dir="comparison_analysis_5")
-
-    
-
+    # 自动两两组合分析示例
+    auto_summary_df = auto_pairwise_analysis(df, switch_cols, base_out_dir="auto_pairwise_analysis")
 
 if __name__ == "__main__":
     main()
