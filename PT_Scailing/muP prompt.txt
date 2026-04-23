@@ -1,0 +1,111 @@
+检查一下当前的代码实现是否与下面的参数化方案完全一致。
+
+### 1. 变量归类 (Variable Mapping)
+
+我们假设 **宽度 $n$ = `config.dim_z`**。为了满足 $\mu$P，`ternary_rank` 应随 `dim_z` 线性缩放（例如总是宽度的 1/4或其他倍数，这个倍数应当调参），`dim_g` 也应随 `dim_z` 线性缩放，这个缩放倍数也需要调参。
+
+1. **Input Weights**  
+   定义：有限维/固定维 → 无限宽 $n$  
+   对应代码中的变量 (Python Path)：  
+   - `model.unary_factors.weight` (Embedding)  
+   - `cls.predictions.bias` (Decoder Bias, 视作 Input 类处理)  
+   - `cls.predictions.transform.dense.bias`
+
+2. **Hidden Weights**  
+   定义：无限宽 $n$ → 无限宽 $n$  
+   对应代码中的变量 (Python Path)：  
+   - `model.iterator.head_selection.ternary_factor_u`  
+   - `model.iterator.head_selection.ternary_factor_v`  
+   - `model.iterator.topic_modeling.binary_factor`  
+   - `cls.predictions.transform.dense.weight` (MLM Head 内部的线性层)
+
+3. **Output Weights**  
+   定义：无限宽 $n$ → 有限维/固定维  
+   对应代码中的变量 (Python Path)：  
+   - `cls.predictions.decoder.weight` (映射回 `vocab_size`)
+
+4. **Biases**  
+   定义：各种偏置项  
+   对应代码中的变量 (Python Path)：  
+   - `cls.predictions.bias` 等所有偏置项 (Adam 下与 Input 处理一致)
+
+5. **Scalars**  
+   定义：标量乘子 (需为常数)  
+   对应代码中的变量 (Python Path)：  
+   - `ternary_factor_scaling`, `binary_factor_scaling`, `classifier_amplifier`, `regularize_h/z/g`
+
+
+### 2. $\mu$P 参数化策略 (Adam 优化器版本)
+
+这里以标准差 `std` 给出的数值（因为 PyTorch `init.normal_` 接受标准差），而非方差。
+
+假设基础学习率为 $\eta$。这个基础学习率是一个需要调参的常数超参。
+
+| 参数类别 | 初始化分布 (Init `std`) | 学习率设置 (Optimizer) | 物理含义 |
+| :--- | :--- | :--- | :--- |
+| **Input Weights** | $\mathcal{N}(0, 1)$ 或 $\mathcal{N}(0, \frac{1}{\sqrt{V}})$<br>*(不随 `dim_z` 变化的常数，这里的第二项指的是std而不是方差，后续同理)* | **Base LR ($\eta$)**<br>multiplier = 1.0 | 保持初始 Input embedding 的坐标尺度为 $\Theta(1)$。 |
+| **Hidden Weights** | $\mathcal{N}(0, \frac{1}{\sqrt{\text{dim\_z}}})$ | **Scaled LR ($\frac{\eta}{\text{dim\_z}}$)**<br>multiplier = `1/dim_z` | 确保每次矩阵乘法后信号保持 $\Theta(1)$，且更新量在 $n \to \infty$ 时最优。 |
+| **Output Weights** | $\mathcal{N}(0, \frac{1}{\text{dim\_z}})$<br>*(注意：这是 1/N 而非 1/sqrt(N))* | **Scaled LR ($\frac{\eta}{\text{dim\_z}}$)**<br>multiplier = `1/dim_z` | 初始化非常小以防止 Logits 爆炸；通过较大的更新来迅速匹配目标。 |
+| **Biases** | 常数 0 | **Base LR ($\eta$)**<br>multiplier = 1.0 | 类似于 Input 权重，保持不随宽度变化的更新。 |
+
+### 3. 代码中必需的特殊缩放修改 (Mathematical Adjustments)
+
+为了防止信号在前向传播中消失或爆炸，必须在代码中修改以下数学计算（这就是“MuP 的手动修正”）：
+
+#### A. 归一化层的能量补偿 (Energy Recovery)
+L1 归一化会导致每个元素的值变为 $O(1/n)$，导致信号坍塌。
+*   **影响位置**：`SquaredSoftmax` 和 `AbsNormalization` 的 `forward` 函数。
+*   **必需代码修改**：
+    ```python
+    # 原代码
+    hidden_states = F.normalize(hidden_states, p=1, dim=self.dim, eps=self.eps)
+    # 修改后 (增加 * self.dim 缩放)
+    hidden_states = F.normalize(hidden_states, p=1, dim=self.dim, eps=self.eps) * hidden_states.shape[self.dim]
+    ```
+
+#### B. 核心交互层的秩补偿 (Rank Scaling)
+Attention 或类似的“双线性”操作如果不缩放，数值会随 rank 增加而线性增加。
+*   **影响位置**：`PtHeadSelection` 中计算 `message_F` 的地方。
+*   **必需代码修改**：
+    ```python
+    message_F = torch.matmul(qz_u, qz_v.transpose(2, 3))
+    # 修改后 (除以秩)
+    message_F = message_F / self.ternary_rank
+    ```
+
+#### C. `cls` 头的重新初始化
+PyTorch 和 HuggingFace 的 `BertOnlyMLMHead` 会使用默认的 Kaiming 初始化或固定 Standard 初始化，这不符合 $\mu$P 的 Output 权重规则。
+*   **影响位置**：`PtForMaskedLM` 的 `__init__` 或 `post_init`。
+*   **操作**：手动定位到 `self.cls.predictions.decoder` 和 `self.cls.predictions.transform.dense` 并按照第 2 点表格中的规则强制 `data.normal_()`。
+
+### 4. 成为常数的超参数 (Invariant Hyperparameters)
+
+在上述修正全部实施后，以下超参数在将 `dim_z` 从 128 扩展到 4096（或其他任何宽度）时，**完全不需要改变**。你可以直接复用在小模型上搜索到的最优值。
+
+1.  **`config.ternary_factor_scaling`**: 控制 Head Selection 内部投影的增益。
+2.  **`config.binary_factor_scaling`**: 控制 Topic Modeling 内部投影的增益。
+3.  **`config.regularize_h`**: Head Selection Softmax 的温度 (Temperature)。
+4.  **`config.regularize_z`**: 主干 Residual Stream 的归一化/阻尼因子。
+5.  **`config.regularize_g`**: Topic Modeling 激活前的正则项。
+6.  **`config.classifier_amplifier`**: 最终分类器前的 Logits 放大倍数。
+7.  **`config.dropout_prob`**
+8.  **Optimizer Base Learning Rate ($\eta$)**: 整个优化器的基准学习率。
+    *   *注：大模型的实际学习率会自动根据 `1/dim_z` 的规则通过 Group LR 调整，你只需要固定输入的那个 $\eta$ 不变。*
+9.  **Optimizer Betas & Eps**: Adam 的 $\beta_1, \beta_2$ 和 $\epsilon$。
+
+
+### 5.重新更改需要调整的超参
+
+1.dim_ratio仍保留为5.5
+2.dim_z，固定为128，此时就不需要再调整total_params_target了，可以删掉
+3.ternary_factor_scaling
+4.binary_factor_scaling
+5.regularize_h/g/z
+6.classifier_amplifier
+7.dropout_prob_z/h
+8.learning_rate，取消之前的幂次拟合，直接调学习率数值即可
+9.dim_z与ternary_rank的比值。ternary_rank不再是一个常数，而是线性相关
+10.根据上述的修改，其他需要调整的超参
+
+
+请按照上述陈述的原理，对代码进行调整，并在调整的地方给出中文注释，说明调了什么功能
