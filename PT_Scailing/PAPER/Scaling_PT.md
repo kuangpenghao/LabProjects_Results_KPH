@@ -30,6 +30,8 @@ This section aims to elaborate on the cross-scale scaling framework tailored for
 | **Hidden Weights** | Ternary Factor $U$ ($U$ in PT)<br>Ternary Factor $V$ ($V$ in PT)<br>Binary Factor ($B$ in PT) |
 | **Output Weights**| Decoder Weight of MLM Head |
 
+Table 1: Grouping of learnable parameters
+
 **Reconstruction of Initialization Distributions and Group-specific Learning Rates.** Following the theoretical derivations of $\mu$P, we tailor the initialization variance scaling rules and group-specific learning rates for different parameter categories. Specifically, the hidden and output weights are initialized with variances scaled by the model width $N$ (i.e., $\text{dim}_z$) and are assigned corresponding scaled learning rates to ensure the stability of training dynamics. Meanwhile, the input weights and biases maintain the base distribution and base learning rate. The detailed cross-scale parameterization configuration is presented in Table 2.
 
 | Parameter Group | Initialization Distribution | Learning Rate |
@@ -38,6 +40,8 @@ This section aims to elaborate on the cross-scale scaling framework tailored for
 | **Hidden Weights** | $\mathcal{N}(0, \frac{1}{N})$ | **Scaled LR ($\frac{\eta}{N}$)** |
 | **Output Weights** | $\mathcal{N}(0, \frac{1}{N^2})$ | **Scaled LR ($\frac{\eta}{N}$)** |
 | **Biases** | $0$ | **Base LR ($\eta$)** |
+
+Table 2: Initialization distribution of learnable parameters and learning rate reconstruction
 
 ### 2.2 Adjustment of mathematical architecture
 
@@ -93,6 +97,8 @@ Table 3 quantitatively illustrates the computational overhead proportion of the 
 | 2560 | 1531602239792087000 | 6.0% |
 | 3840 | 2355026383426084400 | 3.9% |
 
+Table 3: The computational costs of different model widths and the proportion of the computational overhead of $\mu$P relative to traditional methods
+
 <img src="../FLOPs/FLOPs_scaling.png" width=450>
 
 Figure 1: Scaling behavior of computational cost across different model widths. Both axes are presented on a log-log scale.
@@ -111,10 +117,12 @@ $$n \geq \frac{\log \alpha}{\log (1-p)}$$
 
 **Methods.** This experiment is conducted on a PT model with a width of $\text{dim}_z=1536$. Let the hyperparameter set obtained via zero-shot transfer be the central base point $S=\{S_1, S_2, \cdots, S_7\}$. For any $S_i\ (1 \leq i \leq 7)$, we perform independent random sampling within a uniform distribution interval of $\pm 20\%$, i.e., $[0.8S_i, 1.2S_i]$, thereby constructing a perturbed sampling set $S'$ within the local neighborhood of the base point $S$. To verify with 95% confidence (i.e., $\alpha=0.05$) whether $S$ falls into the top 5% (i.e., $p=0.05$) optimal region within the local space, the theoretical minimum number of samples is calculated as $n \geq 58.4$ according to the aforementioned theorem. To this end, we execute $n=63$ independent local random sampling training runs and quantitatively compare their final evaluation losses with that of the base point $S$.
 
-**Results.** The experimental results exhibit a highly significant basin of local minimum effect. Among all 63 perturbed samples, the evaluation losses of the vast majority of configurations increased compared to the zero-shot configuration. Although a small number of optimal sampling points exist, their loss exhibited a marginal decrease of at most 0.4% relative to $S$. Considering the stochastic noise inherent in the optimization process, such extremely subtle performance fluctuations fall perfectly within the training tolerance range and can be deemed statistically equivalent to $S$. To intuitively quantify this phenomenon, we define the distance between the perturbed sampling point $S'$ and the base point $S$ in the relative parameter space as $D(S',S)=\sqrt{\sum_{i=1}^7 (\frac{S_i'-S_i}{S_i})^2}$. As illustrated in Figure 1, we visualize the evaluation results from two perspectives: parameter space distance and relative performance ranking. The distance scatter plot demonstrates the performance degradation trend associated with deviations from the base point, while the full-sample loss ranking curve corroborates that $S$ (marked with a red star) securely resides at the very bottom of this steep local minimum basin.  Therefore, statistically, we possess 95% confidence to assert that the hyperparameter configuration acquired through zero-shot transfer successfully locates within the top 5% optimal region of this neighborhood space.
+**Results.** The experimental results exhibit a highly significant basin of local minimum effect. Among all 63 perturbed samples, the evaluation losses of the vast majority of configurations increased compared to the zero-shot configuration. Although a small number of optimal sampling points exist, their loss exhibited a marginal decrease of at most 0.4% relative to $S$. Considering the stochastic noise inherent in the optimization process, such extremely subtle performance fluctuations fall perfectly within the training tolerance range and can be deemed statistically equivalent to $S$. To intuitively quantify this phenomenon, we define the distance between the perturbed sampling point $S'$ and the base point $S$ in the relative parameter space as $D(S',S)=\sqrt{\sum_{i=1}^7 (\frac{S_i'-S_i}{S_i})^2}$. As illustrated in Figure 2, we visualize the evaluation results from two perspectives: parameter space distance and relative performance ranking. The distance scatter plot demonstrates the performance degradation trend associated with deviations from the base point, while the full-sample loss ranking curve corroborates that $S$ (marked with a red star) securely resides at the very bottom of this steep local minimum basin.  Therefore, statistically, we possess 95% confidence to assert that the hyperparameter configuration acquired through zero-shot transfer successfully locates within the top 5% optimal region of this neighborhood space.
 
 <img src="../Optimality/optimality_check_distance.png" width=450>
 <img src="../Optimality/optimality_check_ranking.png" width=450>
+
+Figure 2: Performance comparison between perturbed sampling points and benchmark points
 
 ### 3.2 Comparison with BERT and Universal Transformer
 
@@ -127,7 +135,7 @@ $$n \geq \frac{\log \alpha}{\log (1-p)}$$
 <img src="../PT_BERT/fig5_loglog_loss_no_fit.png" width=450>
 <img src="../PT_UT/fig5_loglog_loss_no_fit.png" width=450>
 
-Figure 2: Performance comparison between PT and BERT, and between PT and Universal Transformer across varying parameter scales. Both axes are on a log-log scale.
+Figure 3: Performance comparison between PT and BERT, and between PT and Universal Transformer across varying parameter scales. Both axes are on a log-log scale.
 
 ## 4. Related Works
 
