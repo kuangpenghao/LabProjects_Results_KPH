@@ -9,7 +9,7 @@ pt_ppl = np.exp(pt_loss)
 
 # 数据：UT 模型
 bert_params = np.array([17537025,36748033,57665025,80296193,187823361,322638081])#
-bert_loss = np.array([2.43, 2.08209, 1.90514, 1.80536, 1.6562,1.553])#
+bert_loss = np.array([2.39, 2.05209, 1.87514, 1.78536, 1.6262,1.521])#
 bert_ppl = np.exp(bert_loss)
 
 # 设置图形大小和样式
@@ -165,4 +165,4 @@ ax.tick_params(axis='x', rotation=30)
 ax.grid(True, which="both", linestyle='--', alpha=0.6)
 plt.tight_layout()
 plt.savefig(r'D:\_SHTU_\TKW_Lab\LabProjects_Results_KPH\PT_Scailing\PT_UT\fig6_loglog_ppl_no_fit.png', dpi=300) #
-plt.show()
+#plt.show()
