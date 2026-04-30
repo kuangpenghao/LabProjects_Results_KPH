@@ -10,7 +10,7 @@ Neural networks, represented by the Transformer architecture, have achieved trem
 
 However, PT faces a severe bottleneck in scaling its model parameters. When executing variational inference modules such as Head Selection and Topic Modeling, the PT requires numerical scaling of the message tensors prior to non-linear normalization (e.g., Softmax), thereby introducing 6 additional information weight hyperparameters that do not exist in standard Transformers. These 6 hyperparameters exhibit highly non-linear coupling with the learning rate, rendering traditional single-variable tuning strategies completely ineffective. Furthermore, their optimal configurations experience drastic shifts as the model scale increases. Under constrained computational resources, this complex hyperparameter space, which lacks cross-scale transferability, makes hyperparameter search at large model scales prohibitively expensive or even infeasible, severely restricting the potential of the PT to evolve toward large-scale parameters.
 
-Maximal Update Parametrization ($\mu$P) (Yang et al., 2022) is an effective method for resolving hyperparameter drift with scale, enabling the zero-shot transfer of optimal hyperparameters to large models. However, the current $\mu$P framework is specifically designed for "black-box" networks, and its core operations involve scaling adjustments to intermediate activations or logits (for example, to ensure variance stability, the logits scaling factor in the attention mechanism is modified from $1/\sqrt{d_k}$ to $1/d_k$). In the computation graph of the PT, the activation values at each layer represent strict probability distributions. Directly applying scaling factors to these values violates the probability distribution assumptions, thereby destroying the white-box nature of the model.
+Maximal Update Parametrization ($\mu$P) (Yang et al., 2021) is an effective method for resolving hyperparameter drift with scale, enabling the zero-shot transfer of optimal hyperparameters to large models. However, the current $\mu$P framework is specifically designed for "black-box" networks, and its core operations involve scaling adjustments to intermediate activations or logits (for example, to ensure variance stability, the logits scaling factor in the attention mechanism is modified from $1/\sqrt{d_k}$ to $1/d_k$). In the computation graph of the PT, the activation values at each layer represent strict probability distributions. Directly applying scaling factors to these values violates the probability distribution assumptions, thereby destroying the white-box nature of the model.
 
 To address the aforementioned theoretical conflict, this paper proposes a cross-scale parameterization reconstruction method tailored for the PT. Drawing upon the underlying principles of $\mu$P, we systematically apply scaling adjustments to the potential functions and the variational free energy of the PT, under the strict premise of maintaining the probability distribution assumptions. Concurrently, we modify the parameter initialization variance and the group-specific learning rates for particular modules. The adjusted PT not only strictly preserves the interpretable mathematical semantics of the activations at each layer, but also attains a hyperparameter transfer capability consistent with that of black-box networks utilizing $\mu$P. This method enables the PT to be optimally tuned directly on extremely small-scale models and seamlessly transferred to any parameter scale, substantially reducing scaling costs. Experiments demonstrate that across Masked Language Modeling (MLM) tasks of varying scales, the PT architecture equipped with this scaling capability consistently outperforms BERT and achieves performance approaching that of the Universal Transformer.
 
@@ -159,23 +159,23 @@ Moreover, PT cannot leverage Flash Attention during training, leading to signifi
 
 ## References
 
-[1] Bai, S., Kolter, J. Z., & Koltun, V. (2019). Deep equilibrium models. *Advances in Neural Information Processing Systems (NeurIPS)*, 32.
+Bai, S., Kolter, J. Z., & Koltun, V. (2019). Deep equilibrium models. *Advances in Neural Information Processing Systems (NeurIPS)*, 32.
 
-[2] Bai, S., Koltun, V., & Kolter, J. Z. (2020). Multiscale deep equilibrium models. *Advances in Neural Information Processing Systems (NeurIPS)*, 33, 5238-15250.
+Bai, S., Koltun, V., & Kolter, J. Z. (2020). Multiscale deep equilibrium models. *Advances in Neural Information Processing Systems (NeurIPS)*, 33, 5238-15250.
 
-[3] Bergstra, J., & Bengio, Y. (2012). Random search for hyper-parameter optimization. *Journal of Machine Learning Research (JMLR)*, 13(2).
+Bergstra, J., & Bengio, Y. (2012). Random search for hyper-parameter optimization. *Journal of Machine Learning Research (JMLR)*, 13(2).
 
-[4] Dehghani, M., Gouws, S., Vinyals, O., Uszkoreit, J., & Kaiser, Ł. (2019). Universal transformers. *International Conference on Learning Representations (ICLR)*.
+Dehghani, M., Gouws, S., Vinyals, O., Uszkoreit, J., & Kaiser, Ł. (2019). Universal transformers. *International Conference on Learning Representations (ICLR)*.
 
-[5] Devlin, J., Chang, M. W., Lee, K., & Toutanova, K. (2019). BERT: Pre-training of deep bidirectional transformers for language understanding. *Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics (NAACL-HLT)*.
+Devlin, J., Chang, M. W., Lee, K., & Toutanova, K. (2019). BERT: Pre-training of deep bidirectional transformers for language understanding. *Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics (NAACL-HLT)*.
 
-[6] Ramsauer, H., Schäfl, B., Lehner, J., Seidl, P., Widrich, H., Adler, T., ... & Hochreiter, S. (2020). Hopfield networks is all you need. *International Conference on Learning Representations (ICLR)*.
+Ramsauer, H., Schäfl, B., Lehner, J., Seidl, P., Widrich, H., Adler, T., ... & Hochreiter, S. (2020). Hopfield networks is all you need. *International Conference on Learning Representations (ICLR)*.
 
-[7] Wu, B., & Tu, K. (2023). Probabilistic Transformer. *arXiv preprint arXiv:2305.10041*.
+Wu, H., & Tu, K. (2023). Probabilistic Transformer. *arXiv preprint arXiv:2305.10041*.
 
-[8] Yang, G., Hu, E. J., Babuschkin, I., Farhi, D., Ryder, N., Pachocki, J., ... & Gao, J. (2022). Tensor programs v: Tuning large neural networks via zero-shot hyperparameter transfer. *Advances in Neural Information Processing Systems (NeurIPS)*, 35, 13547-13585.
+Yang, G., Hu, E. J., Babuschkin, I., Farhi, D., Ryder, N., Pachocki, J., ... & Gao, J. (2022). Tensor programs v: Tuning large neural networks via zero-shot hyperparameter transfer. *Advances in Neural Information Processing Systems (NeurIPS)*, 35, 13547-13585.
 
-[9] Yang, J., Li, X., Pai, D., Zhou, Y., Ma, Y., Yu, Y., & Xie, C. (2024). Scaling white-box transformers for vision. *Advances in Neural Information Processing Systems (NeurIPS)*.
+Yang, J., Li, X., Pai, D., Zhou, Y., Ma, Y., Yu, Y., & Xie, C. (2024). Scaling white-box transformers for vision. *Advances in Neural Information Processing Systems (NeurIPS)*.
 
 
 # Appendices

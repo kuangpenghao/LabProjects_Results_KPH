@@ -71,7 +71,7 @@
   Shanghai Engineering Research Center of Intelligent Vision and Imaging\\
   \begingroup
     \fontfamily{lmr}\selectfont % 显式选 Computer Modern Roman
-    \{kuangph2023,wuhy2022,tukw\}@shanghaitech.edu.cn
+    \{kuangph2023,wuhy1,tukw\}@shanghaitech.edu.cn
   \endgroup\\
 }
 
@@ -268,10 +268,10 @@ n \geq \frac{\log \alpha}{\log (1-p)}
 \\
 
 \noindent
-\textbf{Methods.} This experiment is conducted on a PT model with a width of $\text{dim}_z=1536$. Let the hyperparameter set obtained via zero-shot transfer be the central base point $S=\{S_1, S_2, \cdots, S_7\}$. For any $S_i\ (1 \leq i \leq 7)$, we perform independent random sampling within a uniform distribution interval of $\pm 20\%$, i.e., $[0.8S_i, 1.2S_i]$, thereby constructing a perturbed sampling set $S'$ within the local neighborhood of the base point $S$. To verify with 95\% confidence (i.e., $\alpha=0.05$) whether $S$ falls into the top 5\% (i.e., $p=0.05$) optimal region within the local space, the theoretical minimum number of samples is calculated as $n \geq 58.4$ according to the aforementioned theorem. To this end, we execute $n=63$ independent local random sampling training runs and quantitatively compare their final evaluation losses with that of the base point $S$.\\
+\textbf{Methods.} This experiment is conducted on a PT model with a width of $\text{dim}_z=1536$. Let the hyperparameter set obtained via zero-shot transfer be the central base point $S=\{S_1, S_2, \cdots, S_7\}$. For any $S_i\ (1 \leq i \leq 7)$, we perform independent random sampling within a uniform distribution interval of $\pm 20\%$, i.e., $[0.8S_i, 1.2S_i]$, thereby constructing a perturbed sampling set $S'$ within the local neighborhood of the base point $S$. To verify with 95\% confidence (i.e., $\alpha=0.05$) whether $S$ falls into the top 5\% (i.e., $p=0.05$) optimal region within the local space, the theoretical minimum number of samples is calculated as $n \geq 58.4$ according to the aforementioned theorem. To this end, we execute $n=62$ independent local random sampling training runs and quantitatively compare their final evaluation losses with that of the base point $S$.\\
 
 \noindent
-\textbf{Results.} The experimental results exhibit a highly significant basin of local minimum effect. Among all 63 perturbed samples, the evaluation losses of the vast majority of configurations increased compared to the zero-shot configuration. Although a small number of optimal sampling points exist, their loss exhibited a marginal decrease of at most 0.4\% relative to $S$. Considering the stochastic noise inherent in the optimization process, such extremely subtle performance fluctuations fall perfectly within the training tolerance range and can be deemed statistically equivalent to $S$. To intuitively quantify this phenomenon, we define the distance between the perturbed sampling point $S'$ and the base point $S$ in the relative parameter space as:
+\textbf{Results.} The experimental results exhibit a highly significant basin of local minimum effect. Among all 62 perturbed samples, the evaluation losses of the vast majority of configurations increased compared to the zero-shot configuration. Although a small number of optimal sampling points exist, their loss exhibited a marginal decrease of at most 0.4\% relative to $S$. Considering the stochastic noise inherent in the optimization process, such extremely subtle performance fluctuations fall perfectly within the training tolerance range and can be deemed statistically equivalent to $S$. To intuitively quantify this phenomenon, we define the distance between the perturbed sampling point $S'$ and the base point $S$ in the relative parameter space as:
 \begin{equation}
 D(S',S)=\sqrt{\sum_{i=1}^7 \left(\frac{S_i'-S_i}{S_i}\right)^2}
 \end{equation}
@@ -341,7 +341,7 @@ Moreover, PT cannot leverage Flash Attention \cite{dao2022flashattention} during
 % Bibliography entries for the entire Anthology, followed by custom entries
 %\bibliography{anthology,custom}
 % Custom bibliography entries only
-\bibliographystyle{acl_natbib} 
+%\bibliographystyle{acl_natbib} 
 \bibliography{references}
 
 \appendix

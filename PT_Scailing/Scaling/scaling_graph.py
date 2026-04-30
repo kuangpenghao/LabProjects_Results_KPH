@@ -12,6 +12,15 @@ bert_params = np.array([19905538, 46201602, 58811138, 135623170,369985794])#
 bert_loss = np.array([2.63854, 2.14209, 2.05514, 1.82036, 1.6762])#
 bert_ppl = np.exp(bert_loss)
 
+def filter_overlapping_ticks(ticks, min_ratio=1.15):
+    """过滤掉对数坐标轴上过于接近的刻度标签"""
+    if len(ticks) == 0: return ticks
+    filtered = [ticks[0]]
+    for t in ticks[1:]:
+        if t / filtered[-1] >= min_ratio:
+            filtered.append(t)
+    return filtered
+
 # 设置图形大小和样式
 plt.rcParams.update({'font.size': 12})
 
@@ -83,9 +92,13 @@ ax.set_xlabel('Parameters (log scale)')
 ax.set_ylabel('Eval Loss (log scale)')
 ax.set_title('Eval Loss vs Parameters (Log-Log Scale)')
 ax.legend(fontsize=10)
-all_x_loss = np.sort(np.concatenate([pt_params, bert_params]))
-ax.set_xticks(all_x_loss)
-ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1e6:.1f}M'))
+
+# 智能刻度选择：获取所有数据点，并过滤掉过于接近的点
+all_x = np.sort(np.unique(np.concatenate([pt_params, bert_params])))
+selected_ticks = filter_overlapping_ticks(all_x)
+ax.set_xticks(selected_ticks)
+ax.get_xaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1e6:.1f}M'))
+
 ax.tick_params(axis='x', rotation=30)
 ax.grid(True, which="both", linestyle='--', alpha=0.6)
 plt.tight_layout()
@@ -118,9 +131,13 @@ ax.set_xlabel('Parameters (log scale)')
 ax.set_ylabel('Perplexity (log scale)')
 ax.set_title('Perplexity vs Parameters (Log-Log Scale)')
 ax.legend(fontsize=10)
-all_x_ppl = np.sort(np.concatenate([pt_params, bert_params]))
-ax.set_xticks(all_x_ppl)
-ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1e6:.1f}M'))
+
+# 智能刻度选择
+all_x_ppl = np.sort(np.unique(np.concatenate([pt_params, bert_params])))
+selected_ticks_ppl = filter_overlapping_ticks(all_x_ppl)
+ax.set_xticks(selected_ticks_ppl)
+ax.get_xaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1e6:.1f}M'))
+
 ax.tick_params(axis='x', rotation=30)
 ax.grid(True, which="both", linestyle='--', alpha=0.6)
 plt.tight_layout()
@@ -139,9 +156,13 @@ ax.set_xlabel('Parameters (log scale)')
 ax.set_ylabel('Eval Loss (log scale)')
 ax.set_title('Eval Loss vs Parameters (Log-Log Scale)')
 ax.legend(fontsize=10)
-all_x_loss = np.sort(np.concatenate([pt_params, bert_params]))
-ax.set_xticks(all_x_loss)
-ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1e6:.1f}M'))
+
+# 智能刻度选择
+all_x_5 = np.sort(np.unique(np.concatenate([pt_params, bert_params])))
+selected_ticks_5 = filter_overlapping_ticks(all_x_5)
+ax.set_xticks(selected_ticks_5)
+ax.get_xaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1e6:.1f}M'))
+
 ax.tick_params(axis='x', rotation=30)
 ax.grid(True, which="both", linestyle='--', alpha=0.6)
 plt.tight_layout()
@@ -158,9 +179,13 @@ ax.set_xlabel('Parameters (log scale)')
 ax.set_ylabel('Perplexity (log scale)')
 ax.set_title('Perplexity vs Parameters (Log-Log Scale)')
 ax.legend(fontsize=10)
-all_x_ppl = np.sort(np.concatenate([pt_params, bert_params]))
-ax.set_xticks(all_x_ppl)
-ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1e6:.1f}M'))
+
+# 智能刻度选择
+all_x_6 = np.sort(np.unique(np.concatenate([pt_params, bert_params])))
+selected_ticks_6 = filter_overlapping_ticks(all_x_6)
+ax.set_xticks(selected_ticks_6)
+ax.get_xaxis().set_major_formatter(ticker.FuncFormatter(lambda x, _: f'{x/1e6:.1f}M'))
+
 ax.tick_params(axis='x', rotation=30)
 ax.grid(True, which="both", linestyle='--', alpha=0.6)
 plt.tight_layout()

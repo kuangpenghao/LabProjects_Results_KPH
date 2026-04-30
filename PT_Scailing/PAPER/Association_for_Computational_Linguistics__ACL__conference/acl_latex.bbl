@@ -1,0 +1,108 @@
+\begin{thebibliography}{15}
+\providecommand{\natexlab}[1]{#1}
+
+\bibitem[{Bai et~al.(2019)Bai, Kolter, and Koltun}]{bai2019deep}
+S.~Bai, J.~Z. Kolter, and V.~Koltun. 2019.
+\newblock Deep equilibrium models.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, volume~32.
+
+\bibitem[{Bai et~al.(2020)Bai, Koltun, and Kolter}]{bai2020multiscale}
+S.~Bai, V.~Koltun, and J.~Z. Kolter. 2020.
+\newblock Multiscale deep equilibrium models.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, volume~33, pages 5238--15250.
+
+\bibitem[{Bergstra and Bengio(2012)}]{bergstra2012random}
+J.~Bergstra and Y.~Bengio. 2012.
+\newblock Random search for hyper-parameter optimization.
+\newblock \emph{Journal of Machine Learning Research (JMLR)}, 13(2).
+
+\bibitem[{Blei et~al.(2017)Blei, Kucukelbir, and
+  McAuliffe}]{blei2017variational}
+David~M Blei, Alp Kucukelbir, and Jon~D McAuliffe. 2017.
+\newblock Variational inference: A review for statisticians.
+\newblock \emph{Journal of the American statistical Association},
+  112(518):859--877.
+
+\bibitem[{Blei et~al.(2003)Blei, Ng, and Jordan}]{blei2003latent}
+David~M Blei, Andrew~Y Ng, and Michael~I Jordan. 2003.
+\newblock Latent dirichlet allocation.
+\newblock \emph{Journal of machine Learning research}, 3(Jan):993--1022.
+
+\bibitem[{Dao et~al.(2022)Dao, Fu, Ermon, Rudra, and
+  R{\'e}}]{dao2022flashattention}
+Tri Dao, Daniel Fu, Stefano Ermon, Atri Rudra, and Christopher R{\'e}. 2022.
+\newblock Flashattention: Fast and memory-efficient exact attention with
+  io-awareness.
+\newblock In \emph{Advances in Neural Information Processing Systems},
+  volume~35, pages 10428--10440.
+
+\bibitem[{Dehghani et~al.(2019)Dehghani, Gouws, Vinyals, Uszkoreit, and
+  Kaiser}]{dehghani2019universal}
+M.~Dehghani, S.~Gouws, O.~Vinyals, J.~Uszkoreit, and {\L}.~Kaiser. 2019.
+\newblock Universal transformers.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+
+\bibitem[{Devlin et~al.(2019)Devlin, Chang, Lee, and
+  Toutanova}]{devlin2019bert}
+J.~Devlin, M.~W. Chang, K.~Lee, and K.~Toutanova. 2019.
+\newblock {BERT}: Pre-training of deep bidirectional transformers for language
+  understanding.
+\newblock In \emph{Proceedings of the 2019 Conference of the North American
+  Chapter of the Association for Computational Linguistics (NAACL-HLT)}.
+
+\bibitem[{Kaddour et~al.(2023)Kaddour, Harris, Mozes, Bradley, Raileanu, and
+  McHardy}]{kaddour2023minipile}
+Jean Kaddour, Joshua Harris, Maximilian Mozes, Herbie Bradley, Roberta
+  Raileanu, and Robert McHardy. 2023.
+\newblock The minipile challenge for data-efficient language models.
+\newblock \emph{arXiv preprint arXiv:2304.08442}.
+
+\bibitem[{Lafferty et~al.(2001)Lafferty, McCallum, and
+  Pereira}]{lafferty2001conditional}
+John~D Lafferty, Andrew McCallum, and Fernando~CN Pereira. 2001.
+\newblock Conditional random fields: Probabilistic models for segmenting and
+  labeling sequence data.
+\newblock In \emph{Proceedings of the Eighteenth International Conference on
+  Machine Learning}.
+
+\bibitem[{Ramsauer et~al.(2020)Ramsauer, Sch{\"a}fl, Lehner, Seidl, Widrich,
+  Adler et~al.}]{ramsauer2020hopfield}
+H.~Ramsauer, B.~Sch{\"a}fl, J.~Lehner, P.~Seidl, M.~Widrich, T.~Adler, and 1
+  others. 2020.
+\newblock Hopfield networks is all you need.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}.
+
+\bibitem[{Vaswani et~al.(2017)Vaswani, Shazeer, Parmar, Uszkoreit, Jones,
+  Gomez, Kaiser, and Polosukhin}]{vaswani2017attention}
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones,
+  Aidan~N Gomez, {\L}ukasz Kaiser, and Illia Polosukhin. 2017.
+\newblock Attention is all you need.
+\newblock In \emph{Advances in neural information processing systems},
+  volume~30.
+
+\bibitem[{Wu and Tu(2023)}]{wu2023probabilistic}
+H.~Wu and K.~Tu. 2023.
+\newblock Probabilistic transformer.
+\newblock \emph{arXiv preprint arXiv:2305.10041}.
+
+\bibitem[{Yang et~al.(2022)Yang, Hu, Babuschkin, Farhi, Ryder, Pachocki
+  et~al.}]{yang2022tensor}
+G.~Yang, E.~J. Hu, I.~Babuschkin, D.~Farhi, N.~Ryder, J.~Pachocki, and 1
+  others. 2022.
+\newblock Tensor programs v: Tuning large neural networks via zero-shot
+  hyperparameter transfer.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, volume~35, pages 13547--13585.
+
+\bibitem[{Yang et~al.(2024)Yang, Li, Pai, Zhou, Ma, Yu, and
+  Xie}]{yang2024scaling}
+J.~Yang, X.~Li, D.~Pai, Y.~Zhou, Y.~Ma, Y.~Yu, and C.~Xie. 2024.
+\newblock Scaling white-box transformers for vision.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}.
+
+\end{thebibliography}

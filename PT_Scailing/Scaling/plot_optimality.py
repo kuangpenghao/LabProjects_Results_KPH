@@ -93,6 +93,16 @@ save_dir = r'd:\_SHTU_\TKW_Lab\LabProjects_Results_KPH\PT_Scailing\Optimality'
 if not os.path.exists(save_dir):
     os.makedirs(save_dir)
 
+# 全局调大字体
+plt.rcParams.update({
+    'font.size': 14,          # 基础字体
+    'axes.titlesize': 18,     # 标题字体
+    'axes.labelsize': 16,     # 轴标签字体
+    'xtick.labelsize': 14,    # x轴刻度字体
+    'ytick.labelsize': 14,    # y轴刻度字体
+    'legend.fontsize': 14     # 图例字体
+})
+
 # 图1: Distance vs Loss Increase
 plt.figure(figsize=(10, 6))
 plt.scatter(distances, loss_increases, alpha=0.6, edgecolors='w', s=50, label='Perturbed Points $S\'$')
@@ -104,6 +114,7 @@ plt.grid(True, linestyle='--', alpha=0.5)
 plt.legend()
 plt.tight_layout()
 plt.savefig(os.path.join(save_dir, 'optimality_check_distance.png'), dpi=300)
+plt.show()
 plt.close()
 
 # 图2: Sorted Index vs Loss Increase
@@ -129,5 +140,5 @@ plt.grid(True, linestyle='--', alpha=0.5)
 plt.legend()
 plt.tight_layout()
 plt.savefig(os.path.join(save_dir, 'optimality_check_ranking.png'), dpi=300)
-# plt.show() # 如果需要交互式查看可开启
+plt.show() # 如果需要交互式查看可开启
 
