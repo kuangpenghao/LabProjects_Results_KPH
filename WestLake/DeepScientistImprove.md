@@ -1,17 +1,9 @@
-### 存在的问题
-* git同步
-* canvas粒度
-* 记忆长度（遗忘如何解决）
-
-### 方案
-* 文档整理
-
-## DeepScientist运行机制理解
+## 对DeepScientist运行机制的个人理解（可能存在误差）
 
 每轮迭代的大致流程：
 * 构建指令
   * 运行builder，获取system提示词等既定规则prompt，结合当前阶段（如baseline/experiment/write等），从skills中获取相关的指令信息
-  * 构建完整的结构化指令
+  * 利用builder构建完整的结构化指令
 * 指令执行
   * 将prompt发送至基座模型，基座模型基于prompt思考生成具体的下一步指令
   * Daemon解析具体指令，调用MCP工具（bash_exec运行，artifact处理文件修改，memory处理信息存取）进行具体执行
